@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:restapi_work/models/post.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,18 +23,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  Future<List<Post>?>? posts;
+
   @override
   void initState() {
-    getPosts();
+    posts = getPosts();
     super.initState();
   }
 
-  void getPosts() async {
+  Future<List<Post>?> getPosts() async {
     final response = await http.get(
       Uri.parse("https://jsonplaceholder.typicode.com/posts"),
     );
     if (response.statusCode == 200) {
-      print(response.body);
+      return postFromJson(response.body);
     } else {
       print(response.statusCode);
     }
@@ -41,6 +44,33 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(backgroundColor: Colors.white);
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: FutureBuilder<List<Post>?>(
+          future: posts,
+          builder: (context, snapshot) {
+            if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+              final data = snapshot.data;
+              return ListView.builder(
+                itemCount: data!.length,
+                itemBuilder: (context, index) {
+                  final post = data[index];
+                  return ListTile(
+                    title: Text(post.title),
+                    subtitle: Text(
+                      post.body,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  );
+                },
+              );
+            } else {
+              return Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
+      ),
+    );
   }
 }
